@@ -1,0 +1,102 @@
+--@name Simple Holo Animation
+--@author Ratyuha
+--@shared
+
+if SERVER then
+    function createAnimation(animTable)
+        return function()
+            local moveanims = 0
+            local rotateanims = 0
+            for _,v in pairs(animTable) do
+                local ratio = 0
+                timer.simple(v[3], function()
+                    if v[1] == "move" then
+                        timer.remove("movetimer" .. moveanims)
+                        moveanims = moveanims + 1
+                        
+                        timer.create("movetimer" .. moveanims,0.01,105/v[4],function()
+                            ratio = ratio + 0.01*v[4]
+                            v[2]:setPos(math.lerpVector(ratio,v[5],v[6]))
+                        end)
+                    elseif v[1] == "rotate" then
+                        timer.remove("rotatetimer" .. rotateanims)
+                        rotateanims = rotateanims + 1
+                        
+                        local start = v[2]:getAngles()
+                        local end_ = start + v[5]
+                        
+                        timer.create("rotatetimer" .. rotateanims,0.01,105/v[4],function()
+                            ratio = ratio + 0.01*v[4]
+                            v[2]:setAngles(math.lerpAngle(ratio,v[5],v[6]))
+                        end)
+                    elseif v[1] == "sound" then
+                        v[2]:play()
+                    elseif v[1] == "net" then
+                        net.start(v[2])
+                        net.send()
+                    end
+                end)
+            end
+        end
+    end
+
+--EXAMPLE
+
+holo = hologram.create(chip():getPos(),Angle(0,0,0),"models/hunter/blocks/cube025x025x025.mdl")
+sound_ = sound.create(holo,"alarms/klaxon1.wav")
+
+animation = createAnimation({
+    --MOVING
+    
+    --{"move",holo,starttime,speed,pos,endpos}
+    --holo - the holo
+    --starttime - how much time in seconds must elapse from the start of the animation function to start the movement
+    --speed - speed of the moving, 1 - base value
+    --pos - movement start position (vector)
+    --endpos - movement end position (vector)
+    
+    --please note that if a new movement starts before the old one ends - it will be forcibly stopped
+    
+    
+    
+    --ROTATING
+
+    --{"rotate",holo,starttime,speed,ang,endang}
+    --holo - the holo
+    --starttime - how much time in seconds must elapse from the start of the animation function to start the rotating
+    --speed - speed of the rotating, 1 - base value
+    --ang - rotating start angle
+    --endang - rotating end angle
+    
+    --please note that if a new rotating starts before the old one ends - it will be forcibly stopped
+    
+    
+    
+    --SOUND
+    
+    --{"sound",sound_,starttime}
+    --sound_ - the sound
+    --starttime - how much time in seconds must elapse from the start of the animation function to play the sound
+        
+    --NET
+    
+    --{"net",name,starttime}
+    --name - net name
+    --starttime - how much time in seconds must elapse from the start of the animation function to send the net
+    
+    {"move",holo,0,1,holo:getPos(),holo:getPos()+Vector(10,20,10)},
+    {"move",holo,2,1,holo:getPos()+Vector(10,20,10),chip():getPos()+Vector(0,0,-10)},
+    {"rotate",holo,0,0.6,holo:getAngles(),holo:getAngles() + Angle(20,45,0)},
+    {"sound",sound_,2},
+    {"net","message",1}
+})
+
+animation()
+
+end
+
+if CLIENT then
+    net.receive("message",function()
+        print("Message~")
+    end)
+end
